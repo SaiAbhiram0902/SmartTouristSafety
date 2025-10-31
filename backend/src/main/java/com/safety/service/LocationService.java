@@ -44,7 +44,14 @@ public class LocationService {
         List<Zone> zones = zoneRepository.findZonesContainingPoint(dto.getLatitude(), dto.getLongitude());
         for (Zone zone : zones) {
             if (zone.isRestricted()) {
-                createAndSendAlert(dto.getTouristId(), "Entered restricted zone: " + zone.getName(), 80);
+                Alert alert = new Alert();
+                alert.setTouristId(dto.getTouristId());
+                alert.setSeverity(90);
+                alert.setMessage("Tourist entered restricted zone: " + zone.getName());
+                alert.setTimestamp(LocalDateTime.now());
+                alertRepository.save(alert);
+                messagingTemplate.convertAndSend("/topic/alerts", alert);
+                System.out.println("⚠️ ALERT: " + alert.getMessage());
             }
         }
 

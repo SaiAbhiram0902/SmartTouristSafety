@@ -1,0 +1,4 @@
+INSERT INTO ZONE (NAME, MIN_LAT, MAX_LAT, MIN_LON, MAX_LON, RESTRICTED)
+VALUES
+('Hyderabad Restricted Area', 17.38, 17.40, 78.47, 78.49, TRUE),
+('Park Safe Zone', 17.45, 17.50, 78.50, 78.55, FALSE);

@@ -16,7 +16,19 @@ public class Zone {
     private double maxLon;
     private boolean restricted;
 
-    // Getters & Setters
+    // Constructors
+    public Zone() {}
+
+    public Zone(String name, double minLat, double maxLat, double minLon, double maxLon, boolean restricted) {
+        this.name = name;
+        this.minLat = minLat;
+        this.maxLat = maxLat;
+        this.minLon = minLon;
+        this.maxLon = maxLon;
+        this.restricted = restricted;
+    }
+
+    // Getters and setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
