@@ -11,9 +11,21 @@ public class Alert {
     private Long id;
 
     private String touristId;
+    private String type;
     private String message;
     private int severity;
     private LocalDateTime timestamp;
+
+    public Alert() {
+    }
+
+    public Alert(String message, String type, String touristId, LocalDateTime timestamp) {
+        this.message = message;
+        this.type = type;
+        this.touristId = touristId;
+        this.timestamp = timestamp;
+    }
+
 
     // Getters and Setters
     public Long getId() { return id; }
@@ -21,6 +33,9 @@ public class Alert {
 
     public String getTouristId() { return touristId; }
     public void setTouristId(String touristId) { this.touristId = touristId; }
+
+    public String getType() { return type; }
+    public void setType(String type) { this.type = type; }
 
     public String getMessage() { return message; }
     public void setMessage(String message) { this.message = message; }

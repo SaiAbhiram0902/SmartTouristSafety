@@ -1,18 +1,21 @@
 package com.safety.service;
 
+import com.safety.dto.LocationDTO;
+import com.safety.dto.LocationResponse;
 import com.safety.model.Alert;
 import com.safety.model.LocationHistory;
 import com.safety.model.Zone;
 import com.safety.repository.AlertRepository;
 import com.safety.repository.LocationHistoryRepository;
 import com.safety.repository.ZoneRepository;
-import com.safety.dto.LocationDTO;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
+
 
 @Service
 public class LocationService {
@@ -26,11 +29,20 @@ public class LocationService {
     @Autowired
     private AlertRepository alertRepository;
 
-    @Autowired
-    private SimpMessagingTemplate messagingTemplate;
+    @Autowired(required = false)
+    private SimpMessagingTemplate messagingTemplate; // may be null in tests; guard usage
 
-    public void processLocation(LocationDTO dto) {
-        // 1️⃣ Save location history
+    @Autowired
+    private AnomalyDetector anomalyDetector;
+
+    // LocationService (only the method shown)
+    public LocationResponse processLocation(LocationDTO dto) {
+        // 1️⃣ Run anomaly detection BEFORE saving
+        // The detector itself will fetch the real previous record from DB
+        List<Alert> anomalies = anomalyDetector.detect(dto,
+                locationHistoryRepository.findTopByTouristIdOrderByTimestampDesc(dto.getTouristId()));
+
+        // 2️⃣ Save the current location history
         LocationHistory history = new LocationHistory();
         history.setTouristId(dto.getTouristId());
         history.setLatitude(dto.getLatitude());
@@ -38,40 +50,75 @@ public class LocationService {
         history.setActivity(dto.getActivity());
         history.setHeartRate(dto.getHeartRate());
         history.setTimestamp(LocalDateTime.now());
-        locationHistoryRepository.save(history);
+        LocationHistory saved = locationHistoryRepository.save(history);
 
-        // 2️⃣ Zone detection
+        // 3️⃣ Persist anomalies (if any)
+        for (Alert a : anomalies) {
+            alertRepository.save(a);
+            if (messagingTemplate != null)
+                messagingTemplate.convertAndSend("/topic/alerts", a);
+            System.out.println("⚠️ ALERT (anomaly): " + a.getMessage());
+        }
+
+        // 4️⃣ Continue with zone + health alerts (unchanged)
+        LocationResponse resp = new LocationResponse();
+        resp.setLocationHistoryId(saved.getId());
+
+        List<LocationResponse.ZoneSummary> zoneSummaries = new ArrayList<>();
+        List<LocationResponse.AlertSummary> alertSummaries = new ArrayList<>();
+
         List<Zone> zones = zoneRepository.findZonesContainingPoint(dto.getLatitude(), dto.getLongitude());
         for (Zone zone : zones) {
+            LocationResponse.ZoneSummary zs = new LocationResponse.ZoneSummary();
+            zs.id = zone.getId();
+            zs.name = zone.getName();
+            zs.restricted = zone.isRestricted();
+            zs.minLat = zone.getMinLat();
+            zs.maxLat = zone.getMaxLat();
+            zs.minLon = zone.getMinLon();
+            zs.maxLon = zone.getMaxLon();
+            zoneSummaries.add(zs);
+
             if (zone.isRestricted()) {
                 Alert alert = new Alert();
                 alert.setTouristId(dto.getTouristId());
-                alert.setSeverity(90);
                 alert.setMessage("Tourist entered restricted zone: " + zone.getName());
+                alert.setSeverity(90);
                 alert.setTimestamp(LocalDateTime.now());
-                alertRepository.save(alert);
-                messagingTemplate.convertAndSend("/topic/alerts", alert);
-                System.out.println("⚠️ ALERT: " + alert.getMessage());
+                Alert savedAlert = alertRepository.save(alert);
+                try {
+                    if (messagingTemplate != null) messagingTemplate.convertAndSend("/topic/alerts", savedAlert);
+                } catch (Exception ignored) {}
+                LocationResponse.AlertSummary as = new LocationResponse.AlertSummary();
+                as.id = savedAlert.getId();
+                as.message = savedAlert.getMessage();
+                as.severity = savedAlert.getSeverity();
+                alertSummaries.add(as);
+                System.out.println("⚠️ ALERT: " + savedAlert.getMessage());
             }
         }
 
-        // 3️⃣ Simple anomaly detection (stub for real IoT logic)
+        // Heart rate alert (unchanged)
         if (dto.getHeartRate() != null && dto.getHeartRate() > 160) {
-            createAndSendAlert(dto.getTouristId(), "Abnormal heart rate detected (" + dto.getHeartRate() + " bpm)", 90);
+            Alert alert = new Alert();
+            alert.setTouristId(dto.getTouristId());
+            alert.setMessage("Abnormal heart rate detected (" + dto.getHeartRate() + " bpm)");
+            alert.setSeverity(85);
+            alert.setTimestamp(LocalDateTime.now());
+            Alert savedAlert = alertRepository.save(alert);
+            try {
+                if (messagingTemplate != null) messagingTemplate.convertAndSend("/topic/alerts", savedAlert);
+            } catch (Exception ignored) {}
+            LocationResponse.AlertSummary as = new LocationResponse.AlertSummary();
+            as.id = savedAlert.getId();
+            as.message = savedAlert.getMessage();
+            as.severity = savedAlert.getSeverity();
+            alertSummaries.add(as);
+            System.out.println("⚠️ ALERT: " + savedAlert.getMessage());
         }
 
-        // (Later: check speed/inactivity anomalies using recent LocationHistory)
-    }
-
-    private void createAndSendAlert(String touristId, String message, int severity) {
-        Alert alert = new Alert();
-        alert.setTouristId(touristId);
-        alert.setMessage(message);
-        alert.setSeverity(severity);
-        alert.setTimestamp(LocalDateTime.now());
-        alertRepository.save(alert);
-
-        // 5️⃣ Push alert to dashboard (WebSocket topic)
-        messagingTemplate.convertAndSend("/topic/alerts", alert);
+        resp.setZones(zoneSummaries);
+        resp.setAlerts(alertSummaries);
+        return resp;
     }
 }
