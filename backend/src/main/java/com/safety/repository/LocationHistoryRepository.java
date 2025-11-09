@@ -10,4 +10,7 @@ import java.util.List;
 public interface LocationHistoryRepository extends JpaRepository<LocationHistory, Long> {
     List<LocationHistory> findByTouristIdOrderByTimestampDesc(String touristId);
     LocationHistory findTopByTouristIdOrderByTimestampDesc(String touristId);
+
+    @Query("SELECT DISTINCT lh.touristId FROM LocationHistory lh")
+    List<String> findDistinctTouristIds();
 }
