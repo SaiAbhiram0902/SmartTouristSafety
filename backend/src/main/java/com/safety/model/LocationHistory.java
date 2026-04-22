@@ -15,9 +15,9 @@ public class LocationHistory {
     private double longitude;
     private String activity;
     private Integer heartRate;
+    private Double altitude; // metres above sea level, null if GPS had no fix
     private LocalDateTime timestamp;
 
-    // Getters & Setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
@@ -35,6 +35,9 @@ public class LocationHistory {
 
     public Integer getHeartRate() { return heartRate; }
     public void setHeartRate(Integer heartRate) { this.heartRate = heartRate; }
+
+    public Double getAltitude() { return altitude; }
+    public void setAltitude(Double altitude) { this.altitude = altitude; }
 
     public LocalDateTime getTimestamp() { return timestamp; }
     public void setTimestamp(LocalDateTime timestamp) { this.timestamp = timestamp; }

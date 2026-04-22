@@ -6,6 +6,7 @@ public class LocationDTO {
     private double longitude;
     private String activity; // optional: trekking/boating
     private Integer heartRate; // optional
+    private Double altitude;
 
     // Constructors
     public LocationDTO() {}
@@ -57,5 +58,13 @@ public class LocationDTO {
 
     public void setHeartRate(Integer heartRate) {
         this.heartRate = heartRate;
+    }
+
+    public Double getAltitude() {
+        return altitude;
+    }
+
+    public void setAltitude(Double altitude) {
+        this.altitude = altitude;
     }
 }

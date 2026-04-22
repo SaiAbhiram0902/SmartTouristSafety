@@ -10,28 +10,46 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/zones")
-@CrossOrigin(origins = "*") // connect
 public class ZoneController {
 
     @Autowired
     private ZoneRepository zoneRepository;
 
-    /**
-     * TASK 1 (POST): For the frontend to CREATE a new zone.
-     * Build a form that sends a Zone object here.
-     */
-    @PostMapping
-    public ResponseEntity<Zone> createZone(@RequestBody Zone zone) {
-        Zone savedZone = zoneRepository.save(zone);
-        return ResponseEntity.ok(savedZone);
-    }
-
-    /**
-     * TASK 2 (GET): For the frontend to GET all zones to draw on the map.
-     */
     @GetMapping
     public ResponseEntity<List<Zone>> getAllZones() {
-        List<Zone> zones = zoneRepository.findAll();
-        return ResponseEntity.ok(zones);
+        return ResponseEntity.ok(zoneRepository.findAll());
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<Zone> getZone(@PathVariable Long id) {
+        return zoneRepository.findById(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @PostMapping
+    public ResponseEntity<Zone> createZone(@RequestBody Zone zone) {
+        zone.setActive(true);
+        return ResponseEntity.ok(zoneRepository.save(zone));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<Zone> updateZone(@PathVariable Long id, @RequestBody Zone zone) {
+        zone.setId(id);
+        return ResponseEntity.ok(zoneRepository.save(zone));
+    }
+
+    @PatchMapping("/{id}/toggle")
+    public ResponseEntity<Zone> toggleActive(@PathVariable Long id) {
+        return zoneRepository.findById(id).map(z -> {
+            z.setActive(!z.isActive());
+            return ResponseEntity.ok(zoneRepository.save(z));
+        }).orElse(ResponseEntity.notFound().build());
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteZone(@PathVariable Long id) {
+        zoneRepository.deleteById(id);
+        return ResponseEntity.noContent().build();
     }
 }
