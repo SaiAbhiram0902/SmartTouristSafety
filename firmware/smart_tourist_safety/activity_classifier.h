@@ -1,7 +1,4 @@
 // activity_classifier.h
-// Drop into your sketch folder alongside smart_tourist_safety.ino
-// Uncomment #include "activity_classifier.h" in the sketch when MPU6050 is soldered
-//
 // Classifies activity from MPU6050 accelerometer + gyroscope data
 // Returns: "STILL", "WALK", "RUN", or "CLIMB"
 // NOTE: "FALL" is NOT returned here — the fall state machine handles that separately
