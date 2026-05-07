@@ -13,7 +13,7 @@
 // ─── WiFi & Backend ───────────────────────────────────────────────
 const char* ssid       = "YOUR_WIFI_SSID";
 const char* password   = "YOUR_WIFI_PASSWORD";
-const char* serverName = "http://YOUR_SERVER_IP:8080/api/location/update";
+const char* serverName = "https://smarttouristsafety-vq1z.onrender.com/api/location/update";
 
 // ─── Tourist ID ───────────────────────────────────────────────────
 String touristId = "T-001"; // overwritten from flash in setup()
