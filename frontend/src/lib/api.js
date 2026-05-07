@@ -2,7 +2,7 @@ import axios from 'axios'
 
 // Base axios instance — all API calls go through this
 const api = axios.create({
-  baseURL: '/api',
+  baseURL: import.meta.env.VITE_API_URL + '/api',
 })
 
 // Attach JWT token to every request automatically
