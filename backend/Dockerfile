@@ -5,7 +5,8 @@ COPY . .
 RUN mvn clean package -DskipTests
 
 # Step 2: Run the application
-FROM openjdk:17-jdk-slim
+# Using eclipse-temurin because it's officially supported and reliable
+FROM eclipse-temurin:17-jre-jammy
 WORKDIR /app
 COPY --from=build /app/target/SmartTouristSafety-backend-1.0.0.jar app.jar
 EXPOSE 8080
